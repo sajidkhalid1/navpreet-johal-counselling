@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS slots (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), starts_at timestamptz NOT NULL, ends_at timestamptz NOT NULL,
- format text NOT NULL CHECK (format IN ('Phone','Online','In person')), active boolean NOT NULL DEFAULT true,
+ format text NOT NULL CHECK (format IN ('Phone','Online','In person')), service text NOT NULL DEFAULT 'consultation' CHECK (service IN ('consultation','individual','couples','family')), active boolean NOT NULL DEFAULT true,
  booked boolean NOT NULL DEFAULT false, CHECK (ends_at>starts_at),
  EXCLUDE USING gist (tstzrange(starts_at,ends_at,'[)') WITH &&) WHERE (active)
 );

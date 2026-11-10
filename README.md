@@ -21,7 +21,7 @@ Configure encrypted environment variables: `DATABASE_URL`, `ADMIN_EMAIL`, `ADMIN
 
 ## Owner studio
 
-- Publish dated, 15-minute consultation slots around other commitments. Date/time entry uses `America/Edmonton`, with database timezone conversion.
+- Publish dated, 15-minute consultation slots or 50-minute individual, couples, and family appointments around other commitments. Date/time entry uses `America/Edmonton`, with database timezone conversion. Confirm these initial session lengths with the practice before publishing availability.
 - See bookings and contact information. Cancel appointments after contacting the client directly.
 - Write, edit, draft, publish, and unpublish journal stories with JPEG/PNG/WebP cover pictures up to 1.4 MB.
 

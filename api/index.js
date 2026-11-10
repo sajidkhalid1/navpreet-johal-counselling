@@ -23,12 +23,12 @@ export default async function handler(req,res) {
       if(!String(req.headers['content-type']||'').startsWith('application/json'))fail('JSON required.',415);
     }
     const b=req.body||{};let result;
-    if(path==='slots'&&method==='GET') result=await query("SELECT id,starts_at,ends_at,format FROM slots WHERE active AND NOT booked AND starts_at>now()+interval '2 hours' ORDER BY starts_at LIMIT 120");
+    if(path==='slots'&&method==='GET') result=await query("SELECT id,starts_at,ends_at,format,service FROM slots WHERE active AND NOT booked AND starts_at>now()+interval '2 hours' ORDER BY starts_at LIMIT 120");
     else if(path==='stories'&&method==='GET') result=await query('SELECT id,title,category,body,image,created_at FROM stories WHERE published ORDER BY created_at DESC LIMIT 60');
     else if(path==='book'&&method==='POST') {
       await rateLimit(req,'booking',8);
       if(!uuid(b.slotId)||!text(b.name,100)||!validEmail(b.email)||!text(b.phone??'',30,0)||b.consent!==true||b.website)fail('Please provide your name, a valid email, and scheduling consent.');
-      result=await query(`WITH reserved AS (UPDATE slots SET booked=true WHERE id=$1 AND active AND NOT booked AND starts_at>now()+interval '2 hours' RETURNING id,starts_at,ends_at,format), created AS (INSERT INTO bookings(slot_id,name,email,phone) SELECT id,$2,$3,$4 FROM reserved RETURNING id) SELECT created.id,reserved.starts_at,reserved.ends_at,reserved.format FROM created CROSS JOIN reserved`,[b.slotId,b.name.trim(),b.email.toLowerCase().trim(),b.phone||'']);
+      result=await query(`WITH reserved AS (UPDATE slots SET booked=true WHERE id=$1 AND active AND NOT booked AND starts_at>now()+interval '2 hours' RETURNING id,starts_at,ends_at,format,service), created AS (INSERT INTO bookings(slot_id,name,email,phone) SELECT id,$2,$3,$4 FROM reserved RETURNING id) SELECT created.id,reserved.starts_at,reserved.ends_at,reserved.format,reserved.service FROM created CROSS JOIN reserved`,[b.slotId,b.name.trim(),b.email.toLowerCase().trim(),b.phone||'']);
       if(!result.length)fail('That appointment has just become unavailable. Please choose another time.',409);
       result=result[0];
     } else if(path==='login'&&method==='POST') {
@@ -40,15 +40,16 @@ export default async function handler(req,res) {
       await owner(req);
       if(path==='me'&&method==='GET')result={email:process.env.ADMIN_EMAIL};
       else if(path==='logout'&&method==='POST') {await query('DELETE FROM sessions WHERE token_hash=$1',[hash(cookie(req))]);res.setHeader('Set-Cookie','nj_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');result={ok:true};}
-      else if(path==='admin/slots'&&method==='GET') result=await query('SELECT id,starts_at,ends_at,format,active,booked FROM slots WHERE ends_at>now() ORDER BY starts_at LIMIT 300');
+      else if(path==='admin/slots'&&method==='GET') result=await query('SELECT id,starts_at,ends_at,format,service,active,booked FROM slots WHERE ends_at>now() ORDER BY starts_at LIMIT 300');
       else if(path==='admin/slots'&&method==='POST') {
         if(b.action==='remove') {if(!uuid(b.id))fail('Invalid slot.');result=await query('UPDATE slots SET active=false WHERE id=$1 AND NOT booked RETURNING id',[b.id]);if(!result.length)fail('Booked appointments must be cancelled in Bookings.',409);}
         else {
-          if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(b.localStart||'')||!['Phone','Online','In person'].includes(b.format)||!Number.isInteger(b.duration)||b.duration!==15)fail('Choose a date, time, and format. Consultations are 15 minutes.');
-          result=await query(`INSERT INTO slots(starts_at,ends_at,format) SELECT $1::timestamp AT TIME ZONE 'America/Edmonton',($1::timestamp AT TIME ZONE 'America/Edmonton')+interval '15 minutes',$2 WHERE ($1::timestamp AT TIME ZONE 'America/Edmonton')>now()+interval '2 hours' RETURNING id`,[b.localStart,b.format]);
+          const service=b.service||'consultation';const duration=service==='consultation'?15:50;
+          if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(b.localStart||'')||!['Phone','Online','In person'].includes(b.format)||!['consultation','individual','couples','family'].includes(service))fail('Choose a date, time, service, and format.');
+          result=await query(`INSERT INTO slots(starts_at,ends_at,format,service) SELECT $1::timestamp AT TIME ZONE 'America/Edmonton',($1::timestamp AT TIME ZONE 'America/Edmonton')+($3::integer * interval '1 minute'),$2,$4 WHERE ($1::timestamp AT TIME ZONE 'America/Edmonton')>now()+interval '2 hours' RETURNING id`,[b.localStart,b.format,duration,service]);
           if(!result.length)fail('Availability must be at least two hours in the future.');
         }
-      } else if(path==='admin/bookings'&&method==='GET')result=await query('SELECT b.id,b.name,b.email,b.phone,b.status,s.starts_at,s.ends_at,s.format FROM bookings b JOIN slots s ON s.id=b.slot_id ORDER BY s.starts_at DESC LIMIT 500');
+      } else if(path==='admin/bookings'&&method==='GET')result=await query('SELECT b.id,b.name,b.email,b.phone,b.status,s.starts_at,s.ends_at,s.format,s.service FROM bookings b JOIN slots s ON s.id=b.slot_id ORDER BY s.starts_at DESC LIMIT 500');
       else if(path==='admin/bookings'&&method==='POST') {
         if(!uuid(b.id)||b.action!=='cancel')fail('Invalid booking action.');
         result=await query(`WITH cancelled AS (UPDATE bookings SET status='cancelled' WHERE id=$1 AND status='confirmed' RETURNING slot_id) UPDATE slots SET active=false WHERE id IN (SELECT slot_id FROM cancelled) RETURNING id`,[b.id]);
