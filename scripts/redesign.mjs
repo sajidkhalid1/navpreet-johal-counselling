@@ -29,3 +29,4 @@ await writeFile('public/contact.html',page('contact','Get in touch','Contact Nav
 const privacy=content.dialogs.match(/<dialog id="privacy-dialog">([\s\S]*?)<\/dialog>/)[1].replace(/<button[\s\S]*?<\/button>/,'');
 await writeFile('public/privacy.html',page('privacy','Privacy & care','How scheduling information is used and protected.',`<section class="wrap reading-room">${privacy}</section>`));
 console.log('Built Home, About, Services, Booking, Journal, Story, Contact, and Privacy pages.');
+await import('./refinements.mjs');

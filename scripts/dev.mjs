@@ -2,7 +2,7 @@ import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import handler from '../api/index.js';
-try{process.loadEnvFile('.env.local');}catch{}
+if(!process.env.DATABASE_URL)try{process.loadEnvFile('.env.local');}catch{}
 const root=resolve('public');
 const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.ttf':'font/ttf','.woff2':'font/woff2'};
 createServer(async(req,res)=>{

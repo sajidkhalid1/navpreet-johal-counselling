@@ -1,0 +1,6 @@
+Edited with the built-in image generation tool from the user-supplied portrait.
+
+Final prompt:
+Use case: identity-preserve. Edit target: the supplied portrait of Navpreet Johal. Make a polished natural professional portrait for her warm sage-green counselling website. Preserve her exact facial identity, facial features, age, skin tone, hairstyle, smile, pose and white blouse; do not beautify or reshape her face. Replace the black background with a very soft warm ivory and muted sage studio backdrop, subtle botanical bokeh at the edges, gentle diffuse window lighting. Balance the colour and exposure of the existing portrait naturally; retain realistic skin texture. Portrait composition from head to waist, arms crossed as in the reference. Soft editorial photography, calming and welcoming, no text, no logo, no frames. Suitable for an organic oval crop on an off-white website.
+
+Optimized website asset: navpreet-photo-v1.jpg
